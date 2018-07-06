@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+
+src_dir=$(dirname $0)
+
+source $src_dir/debug
+
+cd $src_dir
+target_dir=$(pwd)/../pkg/parser
+cd ../grammar
+
+java -Xmx500M -cp "/usr/local/lib/antlr-4.7.1-complete.jar:$CLASSPATH" org.antlr.v4.Tool -visitor -Dlanguage=Go Concerto.G4 -o ${target_dir}

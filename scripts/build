@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -e
+
+#path to source
+src_dir=$(dirname $0)
+
+#add debug capabilities
+source $src_dir/debug
+
+#import version details
+source $src_dir/version
+
+
+#change into source dir
+cd $src_dir/..
+
+#build concerto compiler
+CGO_ENABLED=0 go build -ldflags "-X github.com/koki/concerto/cmd/compiler.GITCOMMIT=$VERSION" -o bin/concerto github.com/koki/concerto/cmd/compiler/concerto

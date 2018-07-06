@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [ -z "${DEBUG}" ]; then
+  set +x
+else
+  set -x
+fi
