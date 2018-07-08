@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr"
-	_ "github.com/golang/glog"
+	"github.com/golang/glog"
 	"github.com/koki/concerto/pkg/parser"
 	"github.com/koki/concerto/pkg/util/parserutils"
 )
@@ -31,10 +31,7 @@ type ParserRoot struct {
 
 func NewParserContext(cc *CompilerContext, parent ConcertoContext) *ParserContext {
 	newParserContext := &ParserContext{
-		BaseConcertoContext: &BaseConcertoContext{
-			CompilerContext: cc,
-			Parent:          parent,
-		},
+		BaseConcertoContext: NewBaseConcertoContext(cc, parent),
 	}
 	return newParserContext
 }
@@ -49,14 +46,16 @@ func (p *ParserContext) InitContext(seed interface{}) ConcertoContext {
 		return p.NewErrorContext("invalid argument; string expected")
 	}
 
-	p.GetModule(module)
-	p.Print(p)
+	nm := p.GetModule(module)
+	if nm.IsErrorContext() {
+		return nm
+	}
 	return p
 }
 
 func (p *ParserContext) GetModule(module string) ConcertoContext {
 	if m := p.FindModule(module); !m.IsEmptyContext() {
-		fmt.Printf("curr: %s\t found non-empty module %s\n", p.ParserRoot.ModuleName, m.(*ParserContext).ParserRoot.ModuleName)
+		glog.V(3).Infof("curr: %s\t found non-empty module %s", p.ParserRoot.ModuleName, m.(*ParserContext).ParserRoot.ModuleName)
 		return m
 	}
 
@@ -76,7 +75,6 @@ func (p *ParserContext) TraverseModule(module string, action func(head string, t
 		tail = append(tail, elems[1:]...)
 	}
 	return action(head, tail)
-
 }
 
 func (p *ParserContext) BuildModule(module string) ConcertoContext {
@@ -92,7 +90,7 @@ func (p *ParserContext) FindModule(module string) ConcertoContext {
 }
 
 func (p *ParserContext) Build(head string, tail []string) ConcertoContext {
-	fmt.Printf("curr: %s\t building %s %v \n", p.ParserRoot.FileDir, head, tail)
+	glog.V(3).Infof("curr: %s\t building %s %v ", p.ParserRoot.FileDir, head, tail)
 	if head == "" {
 		return p
 	}
@@ -112,7 +110,7 @@ func (p *ParserContext) Build(head string, tail []string) ConcertoContext {
 	}
 	newModule := p.GetModule(newModuleName)
 	if newModule.IsErrorContext() {
-		fmt.Printf("curr: %s module build err %s", p.ParserRoot.FileDir, newModule.Error())
+		glog.V(3).Infof("curr: %s module build err %s", p.ParserRoot.FileDir, newModule.Error())
 		return newModule
 	}
 	childTree := newModule.(*ParserContext).Build(newHead, newTail)
@@ -130,7 +128,7 @@ func (p *ParserContext) Build(head string, tail []string) ConcertoContext {
 }
 
 func (p *ParserContext) Match(head string, tail []string) ConcertoContext {
-	fmt.Printf("curr: %s\t looking for \"%s\" %v \n", p.ParserRoot.FileDir, head, tail)
+	glog.V(3).Infof("curr: %s\t looking for \"%s\" %v ", p.ParserRoot.FileDir, head, tail)
 	if head == "" {
 		return p
 	}
@@ -145,14 +143,14 @@ func (p *ParserContext) Match(head string, tail []string) ConcertoContext {
 	if p.ParserRoot.ModuleName == "" { //only true for rootParseContext
 		for _, c := range p.Children {
 			if c.(*ParserContext).ParserRoot.ModuleName == head {
-				fmt.Printf("curr: %s\t found module %s\n", p.ParserRoot.FileDir, head)
+				glog.V(3).Infof("curr: %s\t found module %s", p.ParserRoot.FileDir, head)
 				return c.(*ParserContext).Match(newHead, newTail)
 			}
 		}
 	} else {
 		for _, c := range p.Children {
 			if c.(*ParserContext).ParserRoot.ModuleName == p.ParserRoot.ModuleName+"/"+head {
-				fmt.Printf("curr: %s\t found module %s\n", p.ParserRoot.FileDir, head)
+				glog.V(3).Infof("curr: %s\t found module %s", p.ParserRoot.FileDir, head)
 				return c.(*ParserContext).Match(newHead, newTail)
 			}
 		}
@@ -161,14 +159,14 @@ func (p *ParserContext) Match(head string, tail []string) ConcertoContext {
 }
 
 func (p *ParserContext) BuildParseTree(moduleName, modulePath string) ConcertoContext {
-	fmt.Printf("curr: %s\t building parse tree for module %s\n", p.ParserRoot.FileDir, moduleName)
+	glog.V(3).Infof("curr: %s\t building parse tree for module %s", p.ParserRoot.FileDir, moduleName)
 	newModule := NewParserContext(p.BaseConcertoContext.CompilerContext.(*CompilerContext), p)
 	newModule.ParserRoot.ModuleName = moduleName
 	p.Children = append(p.Children, newModule)
 	walker := func(file string, info os.FileInfo, err error) error {
-		fmt.Printf("curr: %s\t processing file %s\n", p.ParserRoot.FileDir, file)
+		glog.V(3).Infof("curr: %s\t processing file %s", p.ParserRoot.FileDir, file)
 		if err != nil {
-			fmt.Printf("curr: %s\t err processing file %s\n", p.ParserRoot.FileDir, err)
+			glog.V(3).Infof("curr: %s\t err processing file %s", p.ParserRoot.FileDir, err)
 			return p.NewErrorContext(err)
 		}
 
@@ -201,20 +199,22 @@ func (p *ParserContext) BuildParseTree(moduleName, modulePath string) ConcertoCo
 			return nil
 		}
 
-		fmt.Printf("curr: %s\t found module file %s\n", p.ParserRoot.FileDir, file)
+		glog.V(3).Infof("curr: %s\t found module file %s", p.ParserRoot.FileDir, file)
 		tree, err := parserutils.ParseFile(file)
 		if err != nil {
 			return p.NewErrorContext(err)
 		}
-		fmt.Printf("curr: %s\t built tree succesfully for module %s\n", p.ParserRoot.FileDir, moduleName)
+		glog.V(3).Infof("curr: %s\t built tree succesfully for module %s", p.ParserRoot.FileDir, moduleName)
 		newModule.ParserRoot.ConcertoFiles = append(newModule.ParserRoot.ConcertoFiles, file)
 		newModule.ParseTrees = append(newModule.ParseTrees, tree)
-		fmt.Printf("curr: %s\t traversing tree for module %s\n", p.ParserRoot.FileDir, moduleName)
+		glog.V(3).Infof("curr: %s\t traversing tree for module %s", p.ParserRoot.FileDir, moduleName)
 		switch v := tree.Accept(newModule).(type) {
-		case error:
-			if v.Error() == "" {
-				return nil
+		case ConcertoContext:
+			if v.(ConcertoContext).IsErrorContext() {
+				return v
 			}
+			return nil
+		case error:
 			return v
 		default:
 			return nil
@@ -229,7 +229,7 @@ func (p *ParserContext) BuildParseTree(moduleName, modulePath string) ConcertoCo
 }
 
 func (p *ParserContext) Print(cc *ParserContext) {
-	fmt.Printf("name:%s path:%s\n", cc.ParserRoot.FileDir, cc.ParserRoot.FileDir)
+	fmt.Printf("Path:%s \t Name:%s FileName: %+v\n", cc.ParserRoot.FileDir, cc.ParserRoot.ModuleName, cc.ParserRoot.ConcertoFiles)
 	for _, c := range cc.Children {
 		c.(*ParserContext).Print(c.(*ParserContext))
 	}
@@ -238,15 +238,17 @@ func (p *ParserContext) Print(cc *ParserContext) {
 func (p *ParserContext) VisitProg(ctx *parser.ProgContext) interface{} {
 	importDecl := ctx.ImportDecl()
 	if importDecl != nil {
-		fmt.Printf("curr: %s\t found imports in prog\n", p.ParserRoot.FileDir)
-		return p.VisitImportDecl(importDecl.(*parser.ImportDeclContext))
+		glog.V(3).Infof("curr: %s\t found imports in prog", p.ParserRoot.FileDir)
+		if importDecl := p.VisitImportDecl(importDecl.(*parser.ImportDeclContext)); importDecl.(ConcertoContext).IsErrorContext() {
+			return importDecl
+		}
 	}
 	return p
 }
 
 func (p *ParserContext) VisitImportDecl(ctx *parser.ImportDeclContext) interface{} {
 	for _, spec := range ctx.AllImportSpec() {
-		fmt.Printf("curr: %s\t found importSpec in importDecl\n", p.ParserRoot.FileDir)
+		glog.V(3).Infof("curr: %s\t found importSpec in importDecl", p.ParserRoot.FileDir)
 		if m := p.VisitImportSpec(spec.(*parser.ImportSpecContext)); m.(ConcertoContext).IsErrorContext() {
 			return m
 		}
@@ -261,6 +263,6 @@ func (p *ParserContext) VisitImportSpec(ctx *parser.ImportSpecContext) interface
 		id = path
 	}
 	normalizedModule := strings.Trim(id.GetText(), "\"")
-	fmt.Printf("curr: %s\t building module for import %s\n", p.ParserRoot.ModuleName, normalizedModule)
+	glog.V(3).Infof("curr: %s\t building module for import %s", p.ParserRoot.ModuleName, normalizedModule)
 	return p.BuildModule(normalizedModule)
 }

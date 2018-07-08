@@ -147,6 +147,12 @@ func (s *BaseConcertoListener) EnterQualifiedIdent(ctx *QualifiedIdentContext) {
 // ExitQualifiedIdent is called when production qualifiedIdent is exited.
 func (s *BaseConcertoListener) ExitQualifiedIdent(ctx *QualifiedIdentContext) {}
 
+// EnterRunDecl is called when production runDecl is entered.
+func (s *BaseConcertoListener) EnterRunDecl(ctx *RunDeclContext) {}
+
+// ExitRunDecl is called when production runDecl is exited.
+func (s *BaseConcertoListener) ExitRunDecl(ctx *RunDeclContext) {}
+
 // EnterVarDecl is called when production varDecl is entered.
 func (s *BaseConcertoListener) EnterVarDecl(ctx *VarDeclContext) {}
 
@@ -182,12 +188,6 @@ func (s *BaseConcertoListener) EnterInterfaceDecl(ctx *InterfaceDeclContext) {}
 
 // ExitInterfaceDecl is called when production interfaceDecl is exited.
 func (s *BaseConcertoListener) ExitInterfaceDecl(ctx *InterfaceDeclContext) {}
-
-// EnterMethodSpec is called when production methodSpec is entered.
-func (s *BaseConcertoListener) EnterMethodSpec(ctx *MethodSpecContext) {}
-
-// ExitMethodSpec is called when production methodSpec is exited.
-func (s *BaseConcertoListener) ExitMethodSpec(ctx *MethodSpecContext) {}
 
 // EnterFuncCallSpec is called when production funcCallSpec is entered.
 func (s *BaseConcertoListener) EnterFuncCallSpec(ctx *FuncCallSpecContext) {}

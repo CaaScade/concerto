@@ -20,11 +20,13 @@ eos : WS* NEWLINE
 topLevelDecl : declaration
              | funcDecl
              | methodDecl
+             | statement eos ( WS | NEWLINE )*
              ;
 
-funcDecl : 'func' methodSpec WS* NEWLINE? block ( WS | NEWLINE )* ;
 
-methodDecl : 'func' WS* IDENTIFIER methodSpec WS* NEWLINE? block ( WS | NEWLINE)* ;
+funcDecl : 'func' WS* funcSpec WS* NEWLINE? block ( WS | NEWLINE )* ;
+
+methodDecl : 'func' WS* IDENTIFIER WS* funcSpec WS* NEWLINE? block ( WS | NEWLINE )* ;
 
 block : WS* '{' ( WS | NEWLINE )* ( statement eos ( WS | NEWLINE )* )* '}' ;
 
@@ -35,7 +37,8 @@ statement : statementDecl
 
 returnExpr : 'return' WS+ expression ;
 
-statementDecl : varDecl
+statementDecl : runDecl
+              | varDecl
               ;
 
 expression : primaryExpr
@@ -82,13 +85,16 @@ operandName
 
 qualifiedIdent : IDENTIFIER '.' IDENTIFIER ;
 
-varDecl : 'var' WS+ IDENTIFIER WS* ( IDENTIFIER | funcCallSpec )
-        | 'var' WS+ IDENTIFIER WS* '=' WS* expression
+runDecl : 'run' WS + IDENTIFIER 
+        ;
+
+varDecl : 'var' WS+ IDENTIFIER WS* ( '=' )? WS* ( expression )? ( WS | NEWLINE )*
+ //       | 'var' WS+ IDENTIFIER WS*
         ;
 
 declaration : typeDecl eos+
 //            | constDecl
-//            | varDecl
+            | varDecl
             ;
 
 typeDecl : structDecl 
@@ -101,17 +107,15 @@ structDecl : 'type' WS+ IDENTIFIER WS* ('implements' ( WS* IDENTIFIER WS* )+ )? 
 typeSpec : WS* IDENTIFIER WS* typeRule eos+
          ;
 
-interfaceDecl : 'interface' WS+ IDENTIFIER WS* NEWLINE? WS* '{' (WS | NEWLINE )* (methodSpec eos+)* ( WS | NEWLINE )* '}'
+interfaceDecl : 'interface' WS+ IDENTIFIER WS* '{' NEWLINE ( WS | NEWLINE )* ( funcSpec eos+ )* ( NEWLINE )* '}'
               ;
-
-methodSpec : WS* funcSpec ;
 
 funcCallSpec : IDENTIFIER '(' WS* ( funcCallArg ( ',' funcCallArg )* )? WS* ')' ;
 
 funcCallArg : expression
             ;
 
-funcSpec : IDENTIFIER '(' WS* ( funcArg ( ',' funcArg )* )? ')' ;
+funcSpec : WS* IDENTIFIER '(' WS* ( funcArg ( ',' funcArg )* )? ')' WS* IDENTIFIER? WS* ;
 
 funcArg : WS* IDENTIFIER WS* typeRule WS*
         | WS* typeRule WS*

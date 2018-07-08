@@ -92,6 +92,10 @@ func (v *BaseConcertoVisitor) VisitQualifiedIdent(ctx *QualifiedIdentContext) in
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseConcertoVisitor) VisitRunDecl(ctx *RunDeclContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseConcertoVisitor) VisitVarDecl(ctx *VarDeclContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -113,10 +117,6 @@ func (v *BaseConcertoVisitor) VisitTypeSpec(ctx *TypeSpecContext) interface{} {
 }
 
 func (v *BaseConcertoVisitor) VisitInterfaceDecl(ctx *InterfaceDeclContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseConcertoVisitor) VisitMethodSpec(ctx *MethodSpecContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

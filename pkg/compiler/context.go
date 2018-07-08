@@ -1,17 +1,17 @@
 package compiler
 
 import (
-	"fmt"
-	"runtime"
+	"github.com/koki/concerto/pkg/root_context"
 )
 
 type ConcertoContext interface {
+	root_context.RootContext
+
 	IsParserContext() bool
 	IsSymbolTableContext() bool
 	IsTypeCheckerContext() bool
 	IsCodeGenContext() bool
 	IsCompilerContext() bool
-	IsErrorContext() bool
 	IsEmptyContext() bool
 
 	InitContext(interface{}) ConcertoContext
@@ -20,7 +20,6 @@ type ConcertoContext interface {
 	GetChildren() []ConcertoContext
 	GetCompilerContext() ConcertoContext
 
-	Error() string
 	NewErrorContext(interface{}) ConcertoContext
 }
 
@@ -29,7 +28,18 @@ var _ ConcertoContext = &CompilerContext{}
 var _ ConcertoContext = &ParserContext{}
 var _ ConcertoContext = &ConcertoErrorContext{}
 
+func NewBaseConcertoContext(cc *CompilerContext, parent ConcertoContext) *BaseConcertoContext {
+	rc := root_context.NewRootContext()
+	return &BaseConcertoContext{
+		RootContext:     rc,
+		CompilerContext: cc,
+		Parent:          parent,
+	}
+}
+
 type BaseConcertoContext struct {
+	root_context.RootContext
+
 	Children        []ConcertoContext
 	Parent          ConcertoContext
 	CompilerContext ConcertoContext
@@ -55,10 +65,6 @@ func (b *BaseConcertoContext) IsCompilerContext() bool {
 	return false
 }
 
-func (b *BaseConcertoContext) IsErrorContext() bool {
-	return false
-}
-
 func (b *BaseConcertoContext) IsEmptyContext() bool {
 	return false
 }
@@ -79,29 +85,6 @@ func (b *BaseConcertoContext) GetCompilerContext() ConcertoContext {
 	return b.CompilerContext
 }
 
-func (b *BaseConcertoContext) Error() string {
-	return ""
-}
-
 func (b *BaseConcertoContext) NewErrorContext(seed interface{}) ConcertoContext {
-	err, ok := seed.(error)
-	if !ok {
-		if s, ok := seed.(string); ok {
-			err = fmt.Errorf("%s", s)
-		} else {
-			err = fmt.Errorf("%v", seed)
-		}
-	}
-	_, file, line, ok := runtime.Caller(1)
-	if !ok {
-		return NewErrorContext(CallerErrorInfo{
-			Caller: "BaseConcertoContext.NewErrorContext",
-			Err:    fmt.Errorf("Could not fetch caller information"),
-		})
-	}
-	return NewErrorContext(&CallerErrorInfo{
-		Caller: file,
-		Line:   line,
-		Err:    err,
-	})
+	return NewErrorContext(b.RootContext.NewRootErrorContext(seed))
 }

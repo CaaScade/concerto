@@ -71,6 +71,9 @@ type ConcertoVisitor interface {
 	// Visit a parse tree produced by ConcertoParser#qualifiedIdent.
 	VisitQualifiedIdent(ctx *QualifiedIdentContext) interface{}
 
+	// Visit a parse tree produced by ConcertoParser#runDecl.
+	VisitRunDecl(ctx *RunDeclContext) interface{}
+
 	// Visit a parse tree produced by ConcertoParser#varDecl.
 	VisitVarDecl(ctx *VarDeclContext) interface{}
 
@@ -88,9 +91,6 @@ type ConcertoVisitor interface {
 
 	// Visit a parse tree produced by ConcertoParser#interfaceDecl.
 	VisitInterfaceDecl(ctx *InterfaceDeclContext) interface{}
-
-	// Visit a parse tree produced by ConcertoParser#methodSpec.
-	VisitMethodSpec(ctx *MethodSpecContext) interface{}
 
 	// Visit a parse tree produced by ConcertoParser#funcCallSpec.
 	VisitFuncCallSpec(ctx *FuncCallSpecContext) interface{}

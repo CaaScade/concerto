@@ -71,6 +71,9 @@ type ConcertoListener interface {
 	// EnterQualifiedIdent is called when entering the qualifiedIdent production.
 	EnterQualifiedIdent(c *QualifiedIdentContext)
 
+	// EnterRunDecl is called when entering the runDecl production.
+	EnterRunDecl(c *RunDeclContext)
+
 	// EnterVarDecl is called when entering the varDecl production.
 	EnterVarDecl(c *VarDeclContext)
 
@@ -88,9 +91,6 @@ type ConcertoListener interface {
 
 	// EnterInterfaceDecl is called when entering the interfaceDecl production.
 	EnterInterfaceDecl(c *InterfaceDeclContext)
-
-	// EnterMethodSpec is called when entering the methodSpec production.
-	EnterMethodSpec(c *MethodSpecContext)
 
 	// EnterFuncCallSpec is called when entering the funcCallSpec production.
 	EnterFuncCallSpec(c *FuncCallSpecContext)
@@ -179,6 +179,9 @@ type ConcertoListener interface {
 	// ExitQualifiedIdent is called when exiting the qualifiedIdent production.
 	ExitQualifiedIdent(c *QualifiedIdentContext)
 
+	// ExitRunDecl is called when exiting the runDecl production.
+	ExitRunDecl(c *RunDeclContext)
+
 	// ExitVarDecl is called when exiting the varDecl production.
 	ExitVarDecl(c *VarDeclContext)
 
@@ -196,9 +199,6 @@ type ConcertoListener interface {
 
 	// ExitInterfaceDecl is called when exiting the interfaceDecl production.
 	ExitInterfaceDecl(c *InterfaceDeclContext)
-
-	// ExitMethodSpec is called when exiting the methodSpec production.
-	ExitMethodSpec(c *MethodSpecContext)
 
 	// ExitFuncCallSpec is called when exiting the funcCallSpec production.
 	ExitFuncCallSpec(c *FuncCallSpecContext)

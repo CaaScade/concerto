@@ -1,39 +1,17 @@
 package compiler
 
 import (
-	"fmt"
+	"github.com/koki/concerto/pkg/root_context"
 )
 
 type ConcertoErrorContext struct {
-	BaseConcertoContext
-
-	Err error
-}
-
-type CallerErrorInfo struct {
-	Caller string
-	Line   int
-	Err    error
-}
-
-func (c *CallerErrorInfo) Error() string {
-	return fmt.Sprintf("%s:%d: %s\n", c.Caller, c.Line, c.Err.Error())
-}
-
-func (e *ConcertoErrorContext) Error() string {
-	return e.Err.Error()
-}
-
-func (e *ConcertoErrorContext) IsErrorContext() bool {
-	return true
+	*BaseConcertoContext
 }
 
 func NewErrorContext(err interface{}) *ConcertoErrorContext {
-	if e, ok := err.(error); ok {
-		return &ConcertoErrorContext{Err: e}
+	return &ConcertoErrorContext{
+		BaseConcertoContext: &BaseConcertoContext{
+			RootContext: root_context.NewErrorContext(err),
+		},
 	}
-	if e, ok := err.(string); ok {
-		return &ConcertoErrorContext{Err: fmt.Errorf("%s", e)}
-	}
-	return &ConcertoErrorContext{Err: fmt.Errorf("%v", err)}
 }
