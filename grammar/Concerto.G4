@@ -10,7 +10,7 @@ packageClause : 'module' WS+ IDENTIFIER eos+
 importDecl : 'imports:' eos ( importSpec )+ (eos)*
            ;
 
-importSpec : WS* IDENTIFIER eos
+importSpec : WS* STRING_LIT eos
            | WS* IDENTIFIER WS* ':' WS* STRING_LIT eos
            ;
 

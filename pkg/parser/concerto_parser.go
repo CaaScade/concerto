@@ -125,7 +125,7 @@ var parserATN = []uint16{
 	106, 3, 2, 2, 2, 108, 109, 3, 2, 2, 2, 109, 7, 3, 2, 2, 2, 110, 108, 3,
 	2, 2, 2, 111, 113, 7, 44, 2, 2, 112, 111, 3, 2, 2, 2, 113, 116, 3, 2, 2,
 	2, 114, 112, 3, 2, 2, 2, 114, 115, 3, 2, 2, 2, 115, 117, 3, 2, 2, 2, 116,
-	114, 3, 2, 2, 2, 117, 118, 7, 42, 2, 2, 118, 142, 5, 10, 6, 2, 119, 121,
+	114, 3, 2, 2, 2, 117, 118, 7, 43, 2, 2, 118, 142, 5, 10, 6, 2, 119, 121,
 	7, 44, 2, 2, 120, 119, 3, 2, 2, 2, 121, 124, 3, 2, 2, 2, 122, 120, 3, 2,
 	2, 2, 122, 123, 3, 2, 2, 2, 123, 125, 3, 2, 2, 2, 124, 122, 3, 2, 2, 2,
 	125, 129, 7, 42, 2, 2, 126, 128, 7, 44, 2, 2, 127, 126, 3, 2, 2, 2, 128,
@@ -1049,8 +1049,8 @@ func NewImportSpecContext(parser antlr.Parser, parent antlr.ParserRuleContext, i
 
 func (s *ImportSpecContext) GetParser() antlr.Parser { return s.parser }
 
-func (s *ImportSpecContext) IDENTIFIER() antlr.TerminalNode {
-	return s.GetToken(ConcertoParserIDENTIFIER, 0)
+func (s *ImportSpecContext) STRING_LIT() antlr.TerminalNode {
+	return s.GetToken(ConcertoParserSTRING_LIT, 0)
 }
 
 func (s *ImportSpecContext) Eos() IEosContext {
@@ -1071,8 +1071,8 @@ func (s *ImportSpecContext) WS(i int) antlr.TerminalNode {
 	return s.GetToken(ConcertoParserWS, i)
 }
 
-func (s *ImportSpecContext) STRING_LIT() antlr.TerminalNode {
-	return s.GetToken(ConcertoParserSTRING_LIT, 0)
+func (s *ImportSpecContext) IDENTIFIER() antlr.TerminalNode {
+	return s.GetToken(ConcertoParserIDENTIFIER, 0)
 }
 
 func (s *ImportSpecContext) GetRuleContext() antlr.RuleContext {
@@ -1147,7 +1147,7 @@ func (p *ConcertoParser) ImportSpec() (localctx IImportSpecContext) {
 		}
 		{
 			p.SetState(115)
-			p.Match(ConcertoParserIDENTIFIER)
+			p.Match(ConcertoParserSTRING_LIT)
 		}
 		{
 			p.SetState(116)
