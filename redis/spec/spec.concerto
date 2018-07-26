@@ -1,0 +1,10 @@
+module spec
+
+type RedisFailoverSpec {
+  Replicas int
+}
+
+func RedisFailoverSpec xyz1() {}
+
+func RedisFailoverSpec abc1() {}
+

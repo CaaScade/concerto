@@ -1,0 +1,3 @@
+module main
+
+run redis_inst

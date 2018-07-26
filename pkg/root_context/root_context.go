@@ -32,7 +32,7 @@ func (b *BaseRootContext) NewRootErrorContext(seed interface{}) RootContext {
 			err = fmt.Errorf("%v", seed)
 		}
 	}
-	_, file, line, ok := runtime.Caller(1)
+	_, file, line, ok := runtime.Caller(2)
 	if !ok {
 		return NewErrorContext(CallerErrorInfo{
 			Caller: "RootContext.NewRootErrorContext",

@@ -5,7 +5,7 @@ type FuncSymbol struct {
 
 	FuncName   Identifier
 	FuncArgs   []FuncArgs
-	ReturnType Type
+	ReturnType *Type
 }
 
 func NewFuncSymbol() *FuncSymbol {
@@ -19,4 +19,27 @@ type FuncArgs struct{}
 
 func (f *FuncSymbol) IsFuncSymbol() bool {
 	return true
+}
+
+type FuncCallSpecSymbol struct {
+	*BaseSymbol
+
+	FuncArgs []Symbol
+}
+
+func NewFuncCallSpecSymbol() *FuncCallSpecSymbol {
+	fcs := &FuncCallSpecSymbol{
+		BaseSymbol: NewBaseSymbol(),
+	}
+	fcs.BaseSymbol.Kind = FuncCallSpecKind
+	fcs.BaseSymbol.Type = fcs.GetType()
+	return fcs
+}
+
+func (f *FuncCallSpecSymbol) IsFuncCallSymbol() bool {
+	return true
+}
+
+func (f *FuncCallSpecSymbol) GetType() *Type {
+	return NewTypeSymbol("FuncCallSpec")
 }

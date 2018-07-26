@@ -3,19 +3,18 @@ package symtab
 type VarSymbol struct {
 	*BaseSymbol
 
-	Constructor *FuncSymbol
+	Expr Symbol
 }
 
 func NewVarSymbol() *VarSymbol {
-	return &VarSymbol{
+	vs := &VarSymbol{
 		BaseSymbol: NewBaseSymbol(),
 	}
+	vs.BaseSymbol.Type = NewTypeSymbol("VarSymbol")
+	vs.BaseSymbol.Kind = VarKind
+	return vs
 }
 
 func (v *VarSymbol) IsVarSymbol() bool {
 	return true
-}
-
-func (v *VarSymbol) GetConstructor() *FuncSymbol {
-	return v.Constructor
 }

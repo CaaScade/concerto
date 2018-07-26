@@ -10,7 +10,7 @@ type Symbol interface {
 	root_context.RootContext
 
 	GetIdentifier() Identifier
-	GetType() Type
+	GetType() *Type
 	GetScope() Scope
 	GetKind() Kind
 
@@ -18,11 +18,13 @@ type Symbol interface {
 	IsVarSymbol() bool
 	IsFuncSymbol() bool
 	IsInterfaceSymbol() bool
+	IsExpressionSymbol() bool
+	IsTypeSymbol() bool
+	IsFuncCallSpecSymbol() bool
 
 	String() string
 }
 
-type Type string
 type Scope string
 type Identifier string
 
@@ -37,7 +39,7 @@ type BaseSymbol struct {
 
 	Kind       Kind
 	Identifier Identifier
-	Type       Type
+	Type       *Type
 	Scope      Scope
 }
 
@@ -45,7 +47,7 @@ func (b *BaseSymbol) GetIdentifier() Identifier {
 	return b.Identifier
 }
 
-func (b *BaseSymbol) GetType() Type {
+func (b *BaseSymbol) GetType() *Type {
 	return b.Type
 }
 
@@ -70,6 +72,18 @@ func (b *BaseSymbol) IsFuncSymbol() bool {
 }
 
 func (b *BaseSymbol) IsInterfaceSymbol() bool {
+	return false
+}
+
+func (b *BaseSymbol) IsExpressionSymbol() bool {
+	return false
+}
+
+func (b *BaseSymbol) IsTypeSymbol() bool {
+	return false
+}
+
+func (b *BaseSymbol) IsFuncCallSpecSymbol() bool {
 	return false
 }
 

@@ -1,0 +1,22 @@
+module redis_api
+
+imports:
+  "redis"
+
+var x RedisFailover
+var y Poop()
+
+interface app {
+  init()
+}
+
+type RedisFailover implements app {
+  Spec      redis.RedisFailoverSpec
+  Status    redis.RedisFailoverStatus
+}
+
+func RedisFailover xyz() {}
+
+func RedisFailover abc() {}
+
+func Test() Poop {}

@@ -1,0 +1,4 @@
+module b
+
+imports:
+  a: "test/a"

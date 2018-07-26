@@ -1,0 +1,9 @@
+module status
+
+type RedisFailoverStatus {
+  Replicas int
+}
+
+func RedisFailoverStatus xyz2() {}
+
+func RedisFailoverStatus abc2() {}

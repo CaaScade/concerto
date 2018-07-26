@@ -8,4 +8,7 @@ const (
 	FuncKind
 	InterfaceKind
 	VarKind
+	ExpressionKind
+	FuncCallSpecKind
+	TypeKind
 )

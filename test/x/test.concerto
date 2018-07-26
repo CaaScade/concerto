@@ -1,0 +1,52 @@
+module x
+
+imports:
+  x: "pkg/parser"
+  a: "github.com/concerto/kube"
+  c :     "d"
+  e: "f"
+  g
+
+type redis implements app affd afdfd {          
+  image string           
+  scale int
+  data []byte
+  cdata [10]data
+  gdata map[string]masp
+}
+
+interface app 
+{
+  run(a int, b int, d g.r)
+  recover(int, a)
+  test()
+}
+
+func redis run() {}
+
+func redis() {}
+
+func run() {}
+
+func x(a b, c d, g map[string]assaf, fdf map[string][]asdsads) {
+  var redis cask(img)
+
+  var redis cask
+}
+
+func y(a v, fdfd []f, dfdfd [*]f, affdf [aas]fdafdf, asfdsaf [4]safaf) 
+{
+  var g a
+
+  a = 5 + 6 + 7 * (8 - 7)
+
+  image = this.get_image()
+
+  a = dfdf().dsffdsdf().dfsdf
+
+  a = b...
+
+  a("asd") + assad(" assdsad") + "assadsad" + "asddasd"
+
+  return dfdsf("dfdsf") + af(2113) - dsf(saasdasd) * dafdsf +  "sdfdsf"
+}

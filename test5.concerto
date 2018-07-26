@@ -1,0 +1,8 @@
+module main
+
+interface app {
+  poop()
+}
+
+type x {
+}

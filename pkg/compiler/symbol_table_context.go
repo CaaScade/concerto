@@ -1,7 +1,10 @@
 package compiler
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 	"github.com/golang/glog"
@@ -81,18 +84,40 @@ func (s *SymbolTableContext) Print() {
 					}
 					methods = methods + ", " + string(m.GetIdentifier())
 				}
-				glog.Infof("Struct: %s: K:%+v Id:%v M:%s", k, a.GetKind(), a.GetIdentifier(), methods)
+				glog.Infof("Struct:%s K:%+v Id:%v M:%s", k, a.GetKind(), a.GetIdentifier(), methods)
 				continue
 			}
 			if f, ok := v.(*symtab.FuncSymbol); ok {
-				glog.Infof("Func: %s: K:%+v Ret:%s", k, f.GetKind(), f.ReturnType)
+				glog.Infof("Func:%s K:%+v Ret:%s", k, f.GetKind(), f.ReturnType)
 				continue
 			}
 			if i, ok := v.(*symtab.InterfaceSymbol); ok {
-				glog.Infof("Interface: %s: K:%+v", k, i.GetIdentifier())
+				glog.Infof("Interface:%s K:%+v", k, i.GetIdentifier())
 				continue
 			}
-			glog.Infof("%s: K:%v Id:%v", k, v.GetKind(), v.GetIdentifier())
+			if v, ok := v.(*symtab.VarSymbol); ok {
+				if es, ok := v.Expr.(*symtab.ExpressionSymbol); ok {
+					if es.PrimaryExpression != nil {
+						if op := es.PrimaryExpression.(*symtab.PrimaryExpressionSymbol).Operand; op != nil {
+							if bl := op.(*symtab.OperandSymbol).FuncCall; bl != nil {
+								e := string(bl.GetIdentifier())
+								if fc, ok := bl.(*symtab.FuncCallSpecSymbol); ok {
+									e = e + "("
+									for _, fa := range fc.FuncArgs {
+										e = e + fmt.Sprintf("Id:%s T:%s K:%d ", fa.GetIdentifier(), fa.GetType().GetIdentifier(), fa.GetKind())
+									}
+									e = e + ")"
+								}
+								glog.Infof("var Id:%s T:%s K:%d expr:%s", v.Identifier, bl.GetType().GetIdentifier(), bl.GetKind(), e)
+							}
+						} else if bl := es.PrimaryExpression.(*symtab.PrimaryExpressionSymbol).QualifiedExpr; bl != nil {
+							if fc, ok := bl.(*symtab.PrimaryExpressionSymbol).Operand.(*symtab.OperandSymbol).OperandName.(*symtab.VarSymbol); ok {
+								glog.Infof("var T:%s.%s Id:%s K:%d", fc.GetIdentifier(), es.PrimaryExpression.(*symtab.PrimaryExpressionSymbol).GetIdentifier(), v.GetIdentifier(), fc.GetKind())
+							}
+						}
+					}
+				}
+			}
 		}
 		glog.Infof("***")
 		child.(*SymbolTableContext).Print()
@@ -169,7 +194,7 @@ func (s *SymbolTableContext) VisitFuncSpec(ctx *parser.FuncSpecContext) interfac
 	sym.BaseSymbol.Kind = symtab.FuncKind
 	sym.BaseSymbol.Identifier = symtab.Identifier(id.GetText())
 	if len(ctx.AllIDENTIFIER()) == 2 {
-		sym.ReturnType = symtab.Type(ctx.IDENTIFIER(1).GetText())
+		sym.ReturnType = symtab.NewTypeSymbol(ctx.IDENTIFIER(1).GetText())
 	}
 	return sym
 }
@@ -269,17 +294,6 @@ func (s *SymbolTableContext) VisitFuncCallArg(ctx *parser.FuncCallArgContext) in
 	return s.VisitExpression(expr.(*parser.ExpressionContext))
 }
 
-func (s *SymbolTableContext) VisitExpression(ctx *parser.ExpressionContext) interface{} {
-	fmt.Println("visiting expression")
-	if pExpr := ctx.PrimaryExpr(); pExpr != nil {
-		pe := s.VisitPrimaryExpr(pExpr.(*parser.PrimaryExprContext))
-		if pe.(ConcertoContext).IsErrorContext() {
-			return pe
-		}
-	}
-	return s
-}
-
 func (s *SymbolTableContext) VisitPrimaryExpr(ctx *parser.PrimaryExprContext) interface{} {
 	fmt.Println("visiting primary expr")
 	if op := ctx.Operand(); op != nil {
@@ -325,12 +339,220 @@ func (s *SymbolTableContext) VisitRunDecl(ctx *parser.RunDeclContext) interface{
 	return s
 }
 */
+
+func (s *SymbolTableContext) VisitExpression(ctx *parser.ExpressionContext) interface{} {
+	sym := symtab.NewExpressionSymbol()
+	if pExpr := ctx.PrimaryExpr(); pExpr != nil {
+		pe := s.VisitPrimaryExpr(pExpr.(*parser.PrimaryExprContext))
+		if c, ok := pe.(ConcertoContext); ok {
+			if c.IsErrorContext() {
+				return c
+			} else {
+				panic("unreachable")
+			}
+		}
+		if symbl, ok := pe.(symtab.Symbol); ok {
+			sym.PrimaryExpression = symbl
+		} else {
+			panic("unreachable")
+		}
+	}
+	return sym
+}
+
+func (s *SymbolTableContext) VisitPrimaryExpr(ctx *parser.PrimaryExprContext) interface{} {
+	sym := symtab.NewPrimaryExpressionSymbol()
+	if op := ctx.Operand(); op != nil {
+		op := s.VisitOperand(op.(*parser.OperandContext))
+		if c, ok := op.(ConcertoContext); ok {
+			if c.IsErrorContext() {
+				return c
+			} else {
+				panic("unreachable")
+			}
+		}
+		if symbl, ok := op.(symtab.Symbol); ok {
+			sym.Operand = symbl
+		} else {
+			panic("unreachable")
+		}
+	}
+
+	if id := ctx.IDENTIFIER(); id != nil {
+		sym.BaseSymbol.Identifier = symtab.Identifier(id.GetText())
+		expr := s.VisitPrimaryExpr(ctx.PrimaryExpr().(*parser.PrimaryExprContext))
+		if c, ok := expr.(ConcertoContext); ok {
+			if c.IsErrorContext() {
+				return c
+			} else {
+				panic("unreachable")
+			}
+		}
+		if symbl, ok := expr.(symtab.Symbol); ok {
+			sym.QualifiedExpr = symbl
+		} else {
+			panic("unreachable")
+		}
+	}
+	return sym
+}
+
+func (s *SymbolTableContext) VisitOperand(ctx *parser.OperandContext) interface{} {
+	sym := symtab.NewOperandSymbol()
+	if lit := ctx.Literal(); lit != nil {
+		l := s.VisitLiteral(lit.(*parser.LiteralContext))
+		if c, ok := l.(ConcertoContext); ok {
+			if c.IsErrorContext() {
+				return c
+			} else {
+				panic("unreachable")
+			}
+		}
+		if symbl, ok := l.(symtab.Symbol); ok {
+			sym.Literal = symbl
+		} else {
+			panic("unreachable")
+		}
+	}
+	if fc := ctx.FuncCallSpec(); fc != nil {
+		fc := s.VisitFuncCallSpec(fc.(*parser.FuncCallSpecContext))
+		if c, ok := fc.(ConcertoContext); ok {
+			if c.IsErrorContext() {
+				return c
+			} else {
+				panic("unreachable")
+			}
+		}
+		if symbl, ok := fc.(symtab.Symbol); ok {
+			sym.FuncCall = symbl
+		} else {
+			panic("unreachable")
+		}
+	}
+
+	if fc := ctx.OperandName(); fc != nil {
+		fc := s.VisitOperandName(fc.(*parser.OperandNameContext))
+		if c, ok := fc.(ConcertoContext); ok {
+			if c.IsErrorContext() {
+				return c
+			} else {
+				panic("unreachable")
+			}
+		}
+		if symbl, ok := fc.(symtab.Symbol); ok {
+			sym.OperandName = symbl
+		} else {
+			panic("unreachable")
+		}
+	}
+
+	return sym
+}
+
+func (s *SymbolTableContext) VisitOperandName(ctx *parser.OperandNameContext) interface{} {
+	if id := ctx.IDENTIFIER(); id != nil {
+		sym := symtab.NewVarSymbol()
+		sym.BaseSymbol.Identifier = symtab.Identifier(id.GetText())
+		return sym
+	}
+	return s.VisitQualifiedIdent(ctx.QualifiedIdent().(*parser.QualifiedIdentContext))
+}
+
+func (s *SymbolTableContext) VisitQualifiedIdent(ctx *parser.QualifiedIdentContext) interface{} {
+	sym := symtab.NewVarSymbol()
+	ids := ctx.AllIDENTIFIER()
+	sym.BaseSymbol.Scope = symtab.Scope(ids[0].GetText())
+	sym.BaseSymbol.Identifier = symtab.Identifier(ids[1].GetText())
+	return sym
+}
+
+func (s *SymbolTableContext) VisitFuncCallSpec(ctx *parser.FuncCallSpecContext) interface{} {
+	id := ctx.IDENTIFIER()
+	args := ctx.AllFuncCallArg()
+	sym := symtab.NewFuncCallSpecSymbol()
+	sym.BaseSymbol.Identifier = symtab.Identifier(id.GetText())
+	for _, arg := range args {
+		fa := s.VisitFuncCallArg(arg.(*parser.FuncCallArgContext))
+		if c, ok := fa.(ConcertoContext); ok {
+			if c.IsErrorContext() {
+				return c
+			}
+		}
+		if sx, ok := fa.(symtab.Symbol); ok {
+			sym.FuncArgs = append(sym.FuncArgs, sx)
+		} else {
+			panic("unreachable")
+		}
+	}
+	return sym
+}
+
+func (s *SymbolTableContext) VisitFuncCallArg(ctx *parser.FuncCallArgContext) interface{} {
+	expr := ctx.Expression()
+	return s.VisitExpression(expr.(*parser.ExpressionContext))
+}
+
+func (s *SymbolTableContext) VisitLiteral(ctx *parser.LiteralContext) interface{} {
+	if blit := ctx.BasicLit(); blit != nil {
+		return s.VisitBasicLit(blit.(*parser.BasicLitContext))
+	}
+	return s.NewErrorContext("could not parse literal")
+}
+
+func (s *SymbolTableContext) VisitBasicLit(ctx *parser.BasicLitContext) interface{} {
+	sym := symtab.NewLiteralSymbol()
+	sym.BaseSymbol.Kind = symtab.ExpressionKind
+	if intLit := ctx.INT_LIT(); intLit != nil {
+		if x, err := strconv.Atoi(intLit.GetText()); err == nil {
+			sym.Int = int64(x)
+		} else {
+			return s.NewErrorContext(err)
+		}
+	}
+	if stringLit := ctx.STRING_LIT(); stringLit != nil {
+		sym.StringVal = stringLit.GetText()
+	}
+	if runeLit := ctx.RUNE_LIT(); runeLit != nil {
+		if r := ctx.RUNE_LIT().GetText(); len(r) == 1 {
+			rx, _ := utf8.DecodeRuneInString(r)
+			sym.Rune = rx
+		}
+	}
+	if floatLit := ctx.FLOAT_LIT(); floatLit != nil {
+		if x, err := strconv.ParseFloat(ctx.FLOAT_LIT().GetText(), 64); err == nil {
+			sym.Float = x
+		} else {
+			return s.NewErrorContext(err)
+		}
+	}
+	if floatLit := ctx.IMAGINARY_LIT(); floatLit != nil {
+		if x, err := strconv.ParseFloat(ctx.IMAGINARY_LIT().GetText(), 64); err == nil {
+			sym.Imaginary = complex(0, x)
+		}
+	}
+	return sym
+}
+
+func (s *SymbolTableContext) VisitRunDecl(ctx *parser.RunDeclContext) interface{} {
+	return s
+}
+
 func (s *SymbolTableContext) VisitDeclaration(ctx *parser.DeclarationContext) interface{} {
 	varDecl := ctx.VarDecl()
 	if varDecl != nil {
-		glog.Infof("visiting var decl")
-		if v := s.VisitVarDecl(varDecl.(*parser.VarDeclContext)); v.(ConcertoContext).IsErrorContext() {
-			return v
+		glog.V(3).Infof("visiting var decl")
+		xv := s.VisitVarDecl(varDecl.(*parser.VarDeclContext))
+		if v, ok := xv.(ConcertoContext); ok {
+			if v.IsErrorContext() {
+				return v
+			} else {
+				panic("unreachable")
+			}
+		} else if sym, ok := xv.(symtab.Symbol); ok {
+			s.Symbols[string(sym.GetIdentifier())] = sym
+			return s
+		} else {
+			panic("unreachable")
 		}
 	}
 
@@ -338,16 +560,24 @@ func (s *SymbolTableContext) VisitDeclaration(ctx *parser.DeclarationContext) in
 	if typeDecl == nil {
 		return s
 	}
-	return s.VisitTypeDecl(typeDecl.(*parser.TypeDeclContext))
+	td := s.VisitTypeDecl(typeDecl.(*parser.TypeDeclContext))
+	_ = td
+	return td
 }
 
 func (s *SymbolTableContext) VisitVarDecl(ctx *parser.VarDeclContext) interface{} {
 	id := ctx.IDENTIFIER()
 	sym := symtab.NewVarSymbol()
-	sym.BaseSymbol.Kind = symtab.VarKind
 	sym.BaseSymbol.Identifier = symtab.Identifier(id.GetText())
-	s.Symbols[id.GetText()] = sym
-	return s
+
+	tmpExpr := ctx.Expression()
+	expr := s.VisitExpression(tmpExpr.(*parser.ExpressionContext))
+	if c, ok := expr.(ConcertoContext); ok {
+		return c
+	}
+	sym.Expr = expr.(symtab.Symbol)
+
+	return sym
 }
 
 func (s *SymbolTableContext) VisitTypeDecl(ctx *parser.TypeDeclContext) interface{} {
@@ -393,8 +623,9 @@ func (s *SymbolTableContext) VisitStructDecl(ctx *parser.StructDeclContext) inte
 	sym.BaseSymbol.Kind = symtab.StructKind
 
 	for _, impl := range impls {
+		glog.V(3).Infof("adding symbol %s", impl)
 		newSym := symtab.NewBaseSymbol()
-		newSym.Type = symtab.Type(impl)
+		newSym.Type = symtab.NewTypeSymbol(impl)
 		sym.Impl = append(sym.Impl, newSym)
 	}
 	for _, ts := range ctx.AllTypeSpec() {
@@ -404,7 +635,12 @@ func (s *SymbolTableContext) VisitStructDecl(ctx *parser.StructDeclContext) inte
 		}
 		sym.Fields = append(sym.Fields, field.(symtab.Symbol))
 	}
-	glog.V(2).Infof("struct %s implements %s", typ, sym.Impl)
+	implx := ""
+	for i := range sym.Impl {
+		x := sym.Impl[i]
+		implx = implx + " " + string(x.GetType().GetIdentifier())
+	}
+	glog.V(2).Infof("struct %s implements %+v", typ, implx)
 	for _, f := range sym.Fields {
 		glog.V(2).Infof("%s: %s", f.GetIdentifier(), f.GetType())
 	}
@@ -442,7 +678,7 @@ func (s *SymbolTableContext) VisitTypeRule(ctx *parser.TypeRuleContext) interfac
 		typ = ids[0].GetText()
 	}
 	sym := symtab.NewBaseSymbol()
-	sym.Type = symtab.Type(typ)
+	sym.Type = symtab.NewTypeSymbol(typ)
 	return sym
 }
 

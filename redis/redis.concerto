@@ -1,0 +1,15 @@
+module redis
+
+imports:
+  "redis/status"
+  "redis/spec"
+
+type Poop {
+  Color string
+}
+
+func Release() {
+}
+
+func Poop Splash() {
+}

@@ -1,0 +1,10 @@
+module main
+
+type redis implements app {}
+
+var redis_instance redis("library/redis")
+
+var index1 core.Num
+var index2 redis.Scale
+
+run redis_instance
